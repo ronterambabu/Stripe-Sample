@@ -48,6 +48,7 @@ public class PaymentController {
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
                     .body("Error: " + e.getMessage());
         }
+        
     }
 
     @PostMapping("/webhook")
@@ -76,10 +77,9 @@ public class PaymentController {
                 log.info("✅ Payment successful for session: {}", session.getId());
                 log.info("💳 Customer email: {}", session.getCustomer());
 
-                // ✅ You can store this session ID or mark order as paid in DB
-                // saveOrderAsPaid(session);
+                log.info("💰 Amount total: {}");
             } else {
-                log.warn("Event data object deserialization failed");
+                log.warn("Event data object deserialization failed ");
             }
         }
 
