@@ -1,20 +1,18 @@
-# Use official Tomcat base image with JDK 17
-FROM tomcat:10.1-jdk17
+# Use official JDK 17 base image
+FROM openjdk:17-jdk-slim
 
-# Remove default webapps to avoid conflicts
-RUN rm -rf /usr/local/tomcat/webapps/*
+# Set working directory inside the container
+WORKDIR /app
 
-# Copy WAR file to Tomcat's webapps directory
-COPY target/Stripe-Project-Sample-0.0.1-SNAPSHOT.war /usr/local/tomcat/webapps/ROOT.war
+# Copy the JAR file into the container
+COPY target/Stripe-Project-Sample-0.0.1-SNAPSHOT.jar app.jar
 
-
-# Optionally set environment variables with defaults (for local testing only)
-# These will be overridden in production (like Render)
+# Optionally set environment variables (you can override them at runtime)
 ENV STRIPE_SECRET_KEY=dummy_key \
     STRIPE_WEBHOOK_SECRET=dummy_webhook
 
-# Expose the default Tomcat port
+# Expose the default Spring Boot port
 EXPOSE 8080
 
-# Start Tomcat
-CMD ["catalina.sh", "run"]
+# Run the Spring Boot app
+ENTRYPOINT ["java", "-jar", "app.jar"]
