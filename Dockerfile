@@ -5,7 +5,7 @@ FROM tomcat:10.1-jdk17
 RUN rm -rf /usr/local/tomcat/webapps/*
 
 # Copy WAR file to Tomcat's webapps directory
-COPY target/Stripe-Project-Sample-0.0.1-SNAPSHOT.war /usr/local/tomcat/webapps/ROOT.war
+COPY /target/Stripe-Project-Sample-0.0.1-SNAPSHOT.war /usr/local/tomcat/webapps/ROOT.war
 
 # Optionally set environment variables with defaults (for local testing only)
 # These will be overridden in production (like Render)
