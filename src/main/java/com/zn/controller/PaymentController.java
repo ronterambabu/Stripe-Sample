@@ -19,7 +19,7 @@ import com.stripe.exception.SignatureVerificationException;
 import com.stripe.model.Event;
 import com.stripe.model.checkout.Session;
 import com.zn.dto.CheckoutRequest;
-import com.zn.dto.ResponceDTO;
+import com.zn.dto.PaymentResponceDTO;
 import com.zn.service.StripeService;
 
 import jakarta.servlet.http.HttpServletRequest;
@@ -34,20 +34,20 @@ public class PaymentController {
     private StripeService stripeService;
 
     @PostMapping("/create-checkout-session")
-    public ResponseEntity<ResponceDTO> createCheckoutSession(@RequestBody CheckoutRequest request) {
+    public ResponseEntity<PaymentResponceDTO> createCheckoutSession(@RequestBody CheckoutRequest request) {
         log.info("Received request to create checkout session: {}", request);
         try {
             // Get complete session details from service
             Session session = stripeService.createDetailedCheckoutSession(request);
             
             // Use service method to map session to DTO with proper timestamp conversion
-            ResponceDTO response = stripeService.mapSessionToResponceDTO(session);
+            PaymentResponceDTO response = stripeService.mapSessionToResponceDTO(session);
             
             log.info("Checkout session created successfully. Session ID: {}", session.getId());
             return ResponseEntity.ok(response);
         } catch (Exception e) {
             log.error("Error creating checkout session: {}", e.getMessage(), e);
-            ResponceDTO errorResponse = new ResponceDTO();
+            PaymentResponceDTO errorResponse = new PaymentResponceDTO();
             errorResponse.setStatus("error");
             errorResponse.setPayment_status("failed");
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
@@ -56,14 +56,14 @@ public class PaymentController {
     }
 
     @GetMapping("/{id}")
-    public ResponseEntity<ResponceDTO> getCheckoutSession(@PathVariable String id) {
+    public ResponseEntity<PaymentResponceDTO> getCheckoutSession(@PathVariable String id) {
         log.info("Retrieving checkout session with ID: {}", id);
         try {
-            ResponceDTO responseDTO = stripeService.retrieveSession(id);
+            PaymentResponceDTO responseDTO = stripeService.retrieveSession(id);
             return ResponseEntity.ok(responseDTO);
         } catch (Exception e) {
             log.error("Error retrieving checkout session: {}", e.getMessage(), e);
-            ResponceDTO errorResponse = new ResponceDTO();
+            PaymentResponceDTO errorResponse = new PaymentResponceDTO();
             errorResponse.setStatus("error");
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
                     .body(errorResponse);
@@ -71,14 +71,14 @@ public class PaymentController {
     }
     
     @PostMapping("/{id}/expire")
-    public ResponseEntity<ResponceDTO> expireSession(@PathVariable String id) {
+    public ResponseEntity<PaymentResponceDTO> expireSession(@PathVariable String id) {
         log.info("Expiring checkout session with ID: {}", id);
         try {
-            ResponceDTO responseDTO = stripeService.expireSession(id);
+            PaymentResponceDTO responseDTO = stripeService.expireSession(id);
             return ResponseEntity.ok(responseDTO);
         } catch (Exception e) {
             log.error("Error expiring checkout session: {}", e.getMessage(), e);
-            ResponceDTO errorResponse = new ResponceDTO();
+            PaymentResponceDTO errorResponse = new PaymentResponceDTO();
             errorResponse.setStatus("error");
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
                     .body(errorResponse);

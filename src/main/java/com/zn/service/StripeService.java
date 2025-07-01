@@ -20,7 +20,7 @@ import com.stripe.model.checkout.Session;
 import com.stripe.net.Webhook;
 import com.stripe.param.checkout.SessionCreateParams;
 import com.zn.dto.CheckoutRequest;
-import com.zn.dto.ResponceDTO;
+import com.zn.dto.PaymentResponceDTO;
 
 import lombok.extern.slf4j.Slf4j;
 
@@ -42,8 +42,8 @@ public class StripeService {
                      .toLocalDateTime();
     }
 
-    public ResponceDTO mapSessionToResponceDTO(Session session) {
-        ResponceDTO responseDTO = new ResponceDTO();
+    public PaymentResponceDTO mapSessionToResponceDTO(Session session) {
+        PaymentResponceDTO responseDTO = new PaymentResponceDTO();
         responseDTO.setId(session.getId());
         responseDTO.setUrl(session.getUrl());
         responseDTO.setPayment_status(session.getPaymentStatus());
@@ -156,7 +156,7 @@ public class StripeService {
         }
     }
 
-    public ResponceDTO retrieveSession(String sessionId) throws StripeException {
+    public PaymentResponceDTO retrieveSession(String sessionId) throws StripeException {
         log.info("Retrieving session with ID: {}", sessionId);
         Stripe.apiKey = secretKey;
         
@@ -169,7 +169,7 @@ public class StripeService {
         }
     }
 
-    public ResponceDTO expireSession(String sessionId) throws StripeException {
+    public PaymentResponceDTO expireSession(String sessionId) throws StripeException {
         log.info("Expiring session with ID: {}", sessionId);
         Stripe.apiKey = secretKey;
         
