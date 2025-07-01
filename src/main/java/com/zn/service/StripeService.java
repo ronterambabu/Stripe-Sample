@@ -1,7 +1,13 @@
 package com.zn.service;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import java.time.Instant;
+import java.time.LocalDateTime;
+import java.time.ZoneId;
+import java.time.ZonedDateTime;
+import java.time.temporal.ChronoUnit;
+import java.util.HashMap;
+import java.util.Map;
+
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
@@ -16,19 +22,12 @@ import com.stripe.param.checkout.SessionCreateParams;
 import com.zn.dto.CheckoutRequest;
 import com.zn.dto.ResponceDTO;
 
-import java.time.Instant;
-import java.time.ZoneId;
-import java.time.ZonedDateTime;
-import java.time.format.DateTimeFormatter;
-import java.time.temporal.ChronoUnit;
-import java.util.HashMap;
-import java.util.Map;
+import lombok.extern.slf4j.Slf4j;
 
 @Service
+@Slf4j
 public class StripeService {
-    private final Logger logger = LoggerFactory.getLogger(StripeService.class);
-    private final DateTimeFormatter US_FORMAT = DateTimeFormatter.ofPattern("MM/dd/yyyy hh:mm:ss a z");
-    private final ZoneId US_ZONE = ZoneId.of("America/New_York");
+    private static final ZoneId US_ZONE = ZoneId.of("America/New_York");
 
     @Value("${stripe.api.secret.key}")
     private String secretKey;
@@ -36,14 +35,14 @@ public class StripeService {
     @Value("${stripe.webhook.secret}")
     private String endpointSecret;
 
-    private String formatToUsTime(Long timestamp) {
+    private LocalDateTime convertToLocalDateTime(Long timestamp) {
         if (timestamp == null) return null;
         return Instant.ofEpochSecond(timestamp)
                      .atZone(US_ZONE)
-                     .format(US_FORMAT);
+                     .toLocalDateTime();
     }
 
-    private ResponceDTO mapSessionToDTO(Session session) {
+    public ResponceDTO mapSessionToResponceDTO(Session session) {
         ResponceDTO responseDTO = new ResponceDTO();
         responseDTO.setId(session.getId());
         responseDTO.setUrl(session.getUrl());
@@ -51,18 +50,18 @@ public class StripeService {
         responseDTO.setStatus(session.getStatus());
         responseDTO.setMetadata(session.getMetadata());
         
-        // Convert timestamps to US format
-        String createdTime = formatToUsTime(session.getCreated());
-        String expiresTime = formatToUsTime(session.getExpiresAt());
+        // Convert timestamps to LocalDateTime
+        LocalDateTime createdTime = convertToLocalDateTime(session.getCreated());
+        LocalDateTime expiresTime = convertToLocalDateTime(session.getExpiresAt());
         
-        responseDTO.setCreated(createdTime);
+        responseDTO.setCreated_at(createdTime);
         responseDTO.setExpires_at(expiresTime);
         
         return responseDTO;
     }
 
     public Session createDetailedCheckoutSession(CheckoutRequest request) throws StripeException {
-        logger.info("Creating detailed checkout session for product: {}", request.getProductName());
+        log.info("Creating detailed checkout session for product: {}", request.getProductName());
         Stripe.apiKey = secretKey;
 
         // Create metadata for better tracking
@@ -105,28 +104,23 @@ public class StripeService {
 
         try {
             Session session = Session.create(params);
-            logger.info("Created checkout session with ID: {} at {}", 
+            log.info("Created checkout session with ID: {} at {}", 
                        session.getId(), 
-                       formatToUsTime(session.getCreated()));
+                       convertToLocalDateTime(session.getCreated()));
             return session;
         } catch (StripeException e) {
-            logger.error("Error creating checkout session: {}", e.getMessage());
+            log.error("Error creating checkout session: {}", e.getMessage());
             throw e;
         }
     }
 
-//    public String createCheckoutSession(CheckoutRequest request) throws Exception {
-//        Session session = createDetailedCheckoutSession(request);
-//        return session.getUrl();
-//    }
-
     public Event constructWebhookEvent(String payload, String sigHeader) throws SignatureVerificationException {
-        logger.debug("Constructing webhook event from payload with signature");
+        log.debug("Constructing webhook event from payload with signature");
         return Webhook.constructEvent(payload, sigHeader, endpointSecret);
     }
 
     public void processWebhookEvent(Event event) {
-        logger.info("Processing webhook event of type: {}", event.getType());
+        log.info("Processing webhook event of type: {}", event.getType());
         
         switch (event.getType()) {
             case "checkout.session.completed":
@@ -134,7 +128,7 @@ public class StripeService {
                 break;
             // Add more event type handlers here as needed
             default:
-                logger.info("Unhandled event type: {}", event.getType());
+                log.info("Unhandled event type: {}", event.getType());
         }
     }
 
@@ -142,12 +136,12 @@ public class StripeService {
         EventDataObjectDeserializer dataObjectDeserializer = event.getDataObjectDeserializer();
         if (dataObjectDeserializer.getObject().isPresent()) {
             Session session = (Session) dataObjectDeserializer.getObject().get();
-            String completedTime = formatToUsTime(session.getCreated());
+            LocalDateTime completedTime = convertToLocalDateTime(session.getCreated());
             
-            logger.info("✅ Payment successful for session: {} at {}", session.getId(), completedTime);
-            logger.info("💳 Customer email: {}", session.getCustomerDetails() != null ? 
+            log.info("✅ Payment successful for session: {} at {}", session.getId(), completedTime);
+            log.info("💳 Customer email: {}", session.getCustomerDetails() != null ? 
                 session.getCustomerDetails().getEmail() : "N/A");
-            logger.info("💰 Amount total: {} at {}", 
+            log.info("💰 Amount total: {} at {}", 
                        session.getAmountTotal(),
                        completedTime);
             
@@ -158,33 +152,33 @@ public class StripeService {
             // - Update inventory
             // - etc.
         } else {
-            logger.warn("Event data object deserialization failed");
+            log.warn("Event data object deserialization failed");
         }
     }
 
     public ResponceDTO retrieveSession(String sessionId) throws StripeException {
-        logger.info("Retrieving session with ID: {}", sessionId);
+        log.info("Retrieving session with ID: {}", sessionId);
         Stripe.apiKey = secretKey;
         
         try {
             Session session = Session.retrieve(sessionId);
-            return mapSessionToDTO(session);
+            return mapSessionToResponceDTO(session);
         } catch (StripeException e) {
-            logger.error("Error retrieving session: {}", e.getMessage());
+            log.error("Error retrieving session: {}", e.getMessage());
             throw e;
         }
     }
 
     public ResponceDTO expireSession(String sessionId) throws StripeException {
-        logger.info("Expiring session with ID: {}", sessionId);
+        log.info("Expiring session with ID: {}", sessionId);
         Stripe.apiKey = secretKey;
         
         try {
             Session session = Session.retrieve(sessionId);
             Session expiredSession = session.expire();
-            return mapSessionToDTO(expiredSession);
+            return mapSessionToResponceDTO(expiredSession);
         } catch (StripeException e) {
-            logger.error("Error expiring session: {}", e.getMessage());
+            log.error("Error expiring session: {}", e.getMessage());
             throw e;
         }
     }
