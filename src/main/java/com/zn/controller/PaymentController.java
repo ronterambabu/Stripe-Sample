@@ -13,6 +13,7 @@ import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 import com.stripe.exception.SignatureVerificationException;
@@ -34,7 +35,7 @@ public class PaymentController {
     private StripeService stripeService;
 
     @PostMapping("/create-checkout-session")
-    public ResponseEntity<PaymentResponceDTO> createCheckoutSession(@RequestBody CheckoutRequest request) {
+    public ResponseEntity<PaymentResponceDTO> createCheckoutSession(@RequestBody CheckoutRequest request, @RequestParam(required = false) String pricingConfigId) {
         log.info("Received request to create checkout session: {}", request);
         try {
             // Get complete session details from service
